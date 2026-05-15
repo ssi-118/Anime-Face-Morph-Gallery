@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manga Morph Gallery</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="masthead">
+        <div>
+            <p class="eyebrow">DCGAN Latent Space Archive</p>
+            <h1>Manga Morph Gallery</h1>
+        </div>
+        <button onclick="resetWall()">Regenerate Page</button>
+    </header>
+
+    <main>
+        <section id="masonry" class="masonry"></section>
+        <div id="loader" class="loader">Loading more panels...</div>
+    </main>
+
+    <div id="modal" class="modal hidden">
+        <div class="modal-card">
+            <button class="close" onclick="closeModal()">Close</button>
+            <img id="modalImage" src="" alt="Latent morph preview">
+
+            <div class="modal-controls">
+                <span>Face A</span>
+                <input id="morphSlider" type="range" min="0" value="0">
+                <span>Face B</span>
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="playMorph()">Play Morph</button>
+                <button onclick="pauseMorph()">Pause</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const masonry = document.getElementById("masonry");
+        const modal = document.getElementById("modal");
+        const modalImage = document.getElementById("modalImage");
+        const morphSlider = document.getElementById("morphSlider");
+
+        let loading = false;
+        let activeFrames = [];
+        let activeIndex = 0;
+        let timer = null;
+
+        async function loadPanels() {
+            if (loading) return;
+            loading = true;
+
+            const res = await fetch("/api/panels");
+            const data = await res.json();
+
+            data.panels.forEach((panel, index) => {
+                const card = document.createElement("article");
+                card.className = "panel " + panel.size;
+                card.style.animationDelay = `${index * 18}ms`;
+
+                card.innerHTML = `<img src="${panel.image_url}" alt="Generated anime face">`;
+
+                card.addEventListener("click", () => {
+                    openModal(panel.frames);
+                });
+
+                masonry.appendChild(card);
+            });
+
+            loading = false;
+            fillViewport();
+        }
+
+        function fillViewport() {
+            if (document.body.scrollHeight <= window.innerHeight + 300) {
+                loadPanels();
+            }
+        }
+
+        function resetWall() {
+            masonry.innerHTML = "";
+            loadPanels();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        function openModal(frames) {
+            pauseMorph();
+
+            activeFrames = frames;
+            activeIndex = 0;
+
+            modalImage.src = activeFrames[0];
+            morphSlider.max = activeFrames.length - 1;
+            morphSlider.value = 0;
+
+            modal.classList.remove("hidden");
+        }
+
+        function closeModal() {
+            pauseMorph();
+            modal.classList.add("hidden");
+        }
+
+        morphSlider.addEventListener("input", () => {
+            activeIndex = Number(morphSlider.value);
+            modalImage.src = activeFrames[activeIndex];
+        });
+
+        function playMorph() {
+            if (!activeFrames.length) return;
+
+            pauseMorph();
+
+            timer = setInterval(() => {
+                activeIndex += 1;
+
+                if (activeIndex >= activeFrames.length) {
+                    activeIndex = 0;
+                }
+
+                morphSlider.value = activeIndex;
+                modalImage.src = activeFrames[activeIndex];
+            }, 110);
+        }
+
+        function pauseMorph() {
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        window.addEventListener("scroll", () => {
+            const nearBottom =
+                window.innerHeight + window.scrollY >= document.body.offsetHeight - 900;
+
+            if (nearBottom) {
+                loadPanels();
+            }
+        });
+
+        loadPanels();
+    </script>
+</body>
+</html>
