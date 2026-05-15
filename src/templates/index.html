@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Manga Morph Gallery</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <header class="masthead">
         <div>
@@ -36,7 +38,6 @@
             </div>
         </div>
     </div>
-
     <script>
         const masonry = document.getElementById("masonry");
         const modal = document.getElementById("modal");
@@ -58,7 +59,7 @@
             data.panels.forEach((panel, index) => {
                 const card = document.createElement("article");
                 card.className = "panel " + panel.size;
-                card.style.animationDelay = `${index * 18}ms`;
+                card.style.animationDelay = `${index * 12}ms`;
 
                 card.innerHTML = `<img src="${panel.image_url}" alt="Generated anime face">`;
 
@@ -70,19 +71,15 @@
             });
 
             loading = false;
-            fillViewport();
         }
 
-        function fillViewport() {
-            if (document.body.scrollHeight <= window.innerHeight + 300) {
-                loadPanels();
-            }
-        }
-
-        function resetWall() {
+        async function resetWall() {
             masonry.innerHTML = "";
-            loadPanels();
             window.scrollTo({ top: 0, behavior: "smooth" });
+
+            await loadPanels();
+            await loadPanels();
+            await loadPanels();
         }
 
         function openModal(frames) {
@@ -136,12 +133,14 @@
             const nearBottom =
                 window.innerHeight + window.scrollY >= document.body.offsetHeight - 900;
 
-            if (nearBottom) {
+            if (nearBottom && !loading) {
                 loadPanels();
             }
         });
 
-        loadPanels();
+        resetWall();
     </script>
+
 </body>
+
 </html>
